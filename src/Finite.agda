@@ -3,10 +3,10 @@ module Finite where
 open import Data.Empty
 open import Data.List as List hiding (filter)
 open import Data.List.Properties as ListProps
-open import Data.List.Any
+open import Data.List.Relation.Unary.Any
 open import Data.List.Membership.Propositional
 open import Data.List.Membership.Propositional.Properties hiding (finite)
-open import Data.List.Relation.Subset.Propositional
+open import Data.List.Relation.Binary.Subset.Propositional
 open import Data.Product as Σ
 open import Data.Sum as ⊎
 open import Data.Vec as Vec using (Vec; []; _∷_)
@@ -104,7 +104,7 @@ record IsFinite {ℓ₁} (A : Set ℓ₁) : Set ℓ₁ where
       subst
         (λ pa′ → (a , pa′) ∈ _)
         (fromWitness∘toWitness≗id _)
-        (∈-map⁺ (filter-∃-∈ e pa))
+        (∈-map⁺ _ (filter-∃-∈ e pa))
 
     filter : IsFinite (∃ (True ∘ P?))
     filter = record
@@ -127,7 +127,7 @@ record IsFinite {ℓ₁} (A : Set ℓ₁) : Set ℓ₁ where
         case (a <? x) ,′ (x <? a) of λ where
           (yes a<x , _) → x , λ {y} y∈a∷as x<y →
             case y∈a∷as of λ where
-              (here refl) → asymmetric x<y a<x
+              (here refl) → asym x<y a<x
               (there y∈as) → f y∈as x<y
           (_ , yes x<a) → a , λ {y} y∈a∷as a<y →
             case y∈a∷as of λ where
@@ -155,6 +155,6 @@ open IsFinite
 via-left-inverse : ∀ {ℓ₁ ℓ₂} {A : Set ℓ₁} {B : Set ℓ₂} → (A ↞ B) → IsFinite B → IsFinite A
 via-left-inverse f finB = record
   { elements = List.map (from ⟨$⟩_) (elements finB)
-  ; membership = λ a → subst (_∈ _) (left-inverse-of a) (∈-map⁺ (membership finB (to ⟨$⟩ a)))
+  ; membership = λ a → subst (_∈ _) (left-inverse-of a) (∈-map⁺ _ (membership finB (to ⟨$⟩ a)))
   }
-  where open LeftInverse f
+  where open ↞.LeftInverse f

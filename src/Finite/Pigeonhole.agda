@@ -7,10 +7,10 @@ open import Data.Nat.Properties as ℕ-Props
 open import Data.Product as Σ
 open import Data.Sum as ⊎
 open import Data.Vec as Vec
-open import Data.Vec.Any
 open import Data.Vec.Membership.Propositional
 open import Data.Vec.Membership.Propositional.Properties
 open import Data.Vec.Properties
+open import Data.Vec.Relation.Unary.Any using (Any; here; there; index)
 open import Finite
 open import Function
 open import Relation.Binary.PropositionalEquality
@@ -63,45 +63,45 @@ pigeonholeVec : ∀ {a m n} {A : Set a}
   (xs : Vec A m) (ys : Vec A n) →
   n < m →
   (f : Fin m → Fin n) →
-  (g : ∀ i → lookup i xs ≡ lookup (f i) ys) →
-  ∃₂ λ i j → i ≢ j × lookup i xs ≡ lookup j xs
+  (g : ∀ i → lookup xs i ≡ lookup ys (f i)) →
+  ∃₂ λ i j → i Fin.< j × lookup xs i ≡ lookup xs j
 pigeonholeVec xs ys p f g with FinProps.pigeonhole p f
-… | i , j , i≢j , q =
-      i , j , i≢j ,
+… | i , j , i<j , q =
+      i , j , i<j ,
         (begin
-          lookup i xs
+          lookup xs i
         ≡⟨ g i ⟩
-          lookup (f i) ys
-        ≡⟨ cong (flip lookup ys) q ⟩
-          lookup (f j) ys
+          lookup ys (f i)
+        ≡⟨ cong (lookup ys) q ⟩
+          lookup ys (f j)
         ≡⟨ sym (g j) ⟩
-          lookup j xs
+          lookup xs j
         ∎)
 
 lookup-repeats : ∀ {a n} {A : Set a}
   (xs : Vec A n) (i j : Fin n) →
-  i ≢ j → lookup i xs ≡ lookup j xs → Repeats xs
-lookup-repeats (x ∷ xs) zero zero i≢j p = contradiction refl i≢j
-lookup-repeats (x ∷ xs) zero (suc j) i≢j refl = here (∈-lookup j xs)
-lookup-repeats (x ∷ xs) (suc i) zero i≢j refl = here (∈-lookup i xs)
-lookup-repeats (x ∷ xs) (suc i) (suc j) i≢j p = there (lookup-repeats xs i j (i≢j ∘ cong suc) p)
+  i Fin.< j → lookup xs i ≡ lookup xs j → Repeats xs
+lookup-repeats {n} (x ∷ xs) zero zero i<j p = contradiction i<j λ ()
+lookup-repeats (x ∷ xs) zero (suc j) i<j refl = here (∈-lookup j xs)
+lookup-repeats (x ∷ xs) (suc i) zero i<j refl = here (∈-lookup i xs)
+lookup-repeats (x ∷ xs) (suc i) (suc j) si<sj p = there (lookup-repeats xs i j (≤-pred si<sj) p)
 
 lookup-⊆ : ∀ {a m n} {A : Set a}
   (xs : Vec A m) (ys : Vec A n) →
   (f : Fin m → Fin n) →
-  (∀ i → lookup i xs ≡ lookup (f i) ys) →
+  (∀ i → lookup xs i ≡ lookup ys (f i)) →
   xs ⊆ ys
 lookup-⊆ .(_ ∷ _) ys f g (here refl) rewrite g zero = ∈-lookup (f zero) ys
 lookup-⊆ .(_ ∷ _) ys f g (there i) = lookup-⊆ _ ys (f ∘ suc) (g ∘ suc) i
 
-lookup-index : ∀ {a n} {A : Set a} {x} {xs : Vec A n} (i : x ∈ xs) → x ≡ lookup (index i) xs
+lookup-index : ∀ {a n} {A : Set a} {x} {xs : Vec A n} (i : x ∈ xs) → x ≡ lookup xs (index i)
 lookup-index (here refl) = refl
 lookup-index (there i) = lookup-index i
 
 lookup-⊆-≡ : ∀ {a m n} {A : Set a}
   (xs : Vec A m) (ys : Vec A n)
   (f : xs ⊆ ys) →
-  ∀ i → lookup i xs ≡ lookup (⊆-inject xs ys f i) ys
+  ∀ i → lookup xs i ≡ lookup ys (⊆-inject xs ys f i)
 lookup-⊆-≡ xs ys f = lookup-index ∘ f ∘ flip ∈-lookup xs
 
 pigeonhole : ∀ {a m n} {A : Set a}
