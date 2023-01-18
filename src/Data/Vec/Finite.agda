@@ -1,5 +1,3 @@
-open import Finite
-
 module Data.Vec.Finite where
 
 open import Data.List as List
@@ -12,6 +10,7 @@ open import Data.Vec.Membership.Propositional.Properties
 open import Data.Vec.Properties
 open import Relation.Binary.PropositionalEquality
 
+open import Finite
 open IsFinite
 
 instance

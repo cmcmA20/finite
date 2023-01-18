@@ -3,3 +3,6 @@ depend:
   standard-library
 include:
   src
+flags:
+  --safe
+  --without-K

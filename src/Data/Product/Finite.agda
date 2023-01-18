@@ -6,9 +6,9 @@ open import Data.List.Membership.Propositional
 open import Data.List.Membership.Propositional.Properties hiding (finite)
 open import Data.Product
 open import Data.Vec.Properties
-open import Finite
 open import Function
 
+open import Finite
 open IsFinite
 
 instance

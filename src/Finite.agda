@@ -1,55 +1,62 @@
 module Finite where
 
-open import Data.Empty
-open import Data.List as List hiding (filter)
-open import Data.List.Properties as ListProps
-open import Data.List.Relation.Unary.Any
-open import Data.List.Membership.Propositional
-open import Data.List.Membership.Propositional.Properties hiding (finite)
-open import Data.List.Relation.Binary.Subset.Propositional
-open import Data.Product as Σ
-open import Data.Sum as ⊎
-open import Data.Vec as Vec using (Vec; []; _∷_)
-open import Data.Unit as ⊤
-open import Function
-open import Function.LeftInverse as ↞ using (LeftInverse; _↞_)
-open import Function.Equality as Π using (_⟨$⟩_; cong)
-open import Level
-open import Relation.Binary
-open import Relation.Binary.PropositionalEquality as ≡ using (_≡_; _≗_; refl; subst)
-open import Relation.Nullary
-open import Relation.Nullary.Decidable as Decidable
-open import Relation.Nullary.Negation
+open import Data.List.Base as List using (List; []; _∷_; length; map)
+open import Data.List.Membership.Propositional using (_∈_)
+open import Data.List.Membership.Propositional.Properties using (∈-map⁺)
+open import Data.List.Relation.Binary.Subset.Propositional using (_⊆_)
+open import Data.List.Relation.Unary.Any using (here; there)
+open import Data.Product as Σ using (_×_; _,_; -,_; _,′_; ∃)
+open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
+open import Data.Vec.Base using (Vec; []; _∷_; fromList)
+open import Function.Base using (_∘_; id; case_of_)
+open import Function.Equality using (_⟨$⟩_; cong)
+open import Function.LeftInverse using (LeftInverse; _↞_)
+open import Level using (Level)
+open import Relation.Binary using (IsDecStrictPartialOrder)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≗_; refl; subst)
+open import Relation.Nullary.Decidable using (Dec; no; yes; fromWitness; toWitness; True)
+open import Relation.Nullary.Negation using (¬_; contradiction)
 
-fromWitness∘toWitness≗id : ∀ {ℓ} {A : Set ℓ} {A? : Dec A} → fromWitness {Q = A?} ∘ toWitness ≗ id
+private
+  variable
+    ℓ ℓ₁ ℓ₂ ℓ₃ : Level
+    A : Set ℓ₁
+    B : Set ℓ₂
+
+fromWitness∘toWitness≗id : {A? : Dec A} → fromWitness {Q = A?} ∘ toWitness ≗ id
 fromWitness∘toWitness≗id {A? = A?} with A?
-… | yes a = λ where tt → refl
-… | no ¬a = λ ()
+… | yes _ = λ { tt → refl }
+… | no  _ = λ ()
 
-FiniteRec : ∀ {ℓ₁ ℓ₂ ℓ₃} {A : Set ℓ₁} → (A → List A → Set ℓ₂) → Set ℓ₃ → Set _
-FiniteRec P B = ∀ xs ys → (∀ a → (a ∈ xs × P a xs) ⊎ (a ∈ ys)) → B
+FiniteRec : (A → List A → Set ℓ₂) → Set ℓ₃ → Set _
+FiniteRec {A = A} P B = (xs ys : List A) → ((a : A) → (a ∈ xs × P a xs) ⊎ (a ∈ ys)) → B
 
-record IsFinite {ℓ₁} (A : Set ℓ₁) : Set ℓ₁ where
+record IsFinite (A : Set ℓ) : Set ℓ where
   constructor finite
   field
     elements : List A
-    membership : ∀ a → a ∈ elements
+    membership : (a : A) → a ∈ elements
 
   size = length elements
-  elementsVec = Vec.fromList elements
+  elementsVec = fromList elements
 
-  finite-⊆ : ∀ {xs} → xs ⊆ elements
+  private
+    variable
+      xs as : List A
+      a     : A
+
+  finite-⊆ : xs ⊆ elements
   finite-⊆ {x = x} _ = membership x
 
-  finiteRec : ∀ {ℓ₂ ℓ₃} {B : Set ℓ₂} {P : A → List A → Set ℓ₃} → FiniteRec P B → B
+  finiteRec : {Q : A → List A → Set ℓ₁} → FiniteRec Q B → B
   finiteRec rec = rec [] elements (inj₂ ∘ membership)
 
   dec : Dec A
   dec with elements | membership
-  dec | [] | _∈[] = no λ a → case a ∈[] of λ ()
-  dec | a ∷ as | _ = yes a
+  ... | []    | _∈[] = no λ a → case a ∈[] of λ ()
+  ... | a ∷ _ | _    = yes a
 
-  module _ {ℓ₂} {P : A → Set ℓ₂} (P? : ∀ a → Dec (P a)) where
+  module _ {P : A → Set ℓ₁} (P? : (a : A) → Dec (P a)) where
     ∃? : Dec (∃ P)
     ∃? = finiteRec go
       where
@@ -63,10 +70,10 @@ record IsFinite {ℓ₁} (A : Set ℓ₁) : Set ℓ₁ where
           (no ¬py) → go (y ∷ xs) ys λ a →
             case elem a of λ where
               (inj₁ (a∈xs , ¬pa)) → inj₁ (there a∈xs , ¬pa)
-              (inj₂ (here refl)) → inj₁ (here refl , ¬py)
+              (inj₂ (here  refl)) → inj₁ (here refl , ¬py)
               (inj₂ (there a∈ys)) → inj₂ a∈ys
 
-    ∀? : Dec (∀ x → P x)
+    ∀? : Dec ((x : A) → P x)
     ∀? = finiteRec go
       where
         go : FiniteRec (λ a _ → P a) _
@@ -77,8 +84,8 @@ record IsFinite {ℓ₁} (A : Set ℓ₁) : Set ℓ₁ where
           (no ¬py) → no λ py → ¬py (py _)
           (yes py) → go (y ∷ xs) ys λ a →
             case elem a of λ where
-              (inj₁ (a∈xs , pa)) → inj₁ (there a∈xs , pa)
-              (inj₂ (here refl)) → inj₁ (here refl , py)
+              (inj₁ (a∈xs , pa )) → inj₁ (there a∈xs , pa)
+              (inj₂ (here  refl)) → inj₁ (here refl , py)
               (inj₂ (there a∈ys)) → inj₂ a∈ys
 
     filter-∃ : List A → List (∃ P)
@@ -88,18 +95,17 @@ record IsFinite {ℓ₁} (A : Set ℓ₁) : Set ℓ₁ where
         (yes pa) → (-, pa) ∷ filter-∃ as
         (no ¬pa) → filter-∃ as
 
-    filter-∃-∈ : ∀ {a as} → a ∈ as → (pa : True (P? a)) → (a , toWitness pa) ∈ filter-∃ as
+    filter-∃-∈ : a ∈ as → (pa : True (P? a)) → (a , toWitness pa) ∈ filter-∃ as
     filter-∃-∈ {as = a ∷ as} (here refl) pa with P? a
-    filter-∃-∈ (here refl) pa | yes pa′ = here refl
-    filter-∃-∈ (here refl) () | no ¬pa
+    ... | yes pa′ = here refl
     filter-∃-∈ {as = a ∷ as} (there e) pa with P? a
-    filter-∃-∈ (there e) pa | yes pa′ = there (filter-∃-∈ e pa)
-    filter-∃-∈ (there e) pa | no ¬pa = filter-∃-∈ e pa
+    ... | yes pa′ = there (filter-∃-∈ e pa)
+    ... | no ¬pa  = filter-∃-∈ e pa
 
     filter-∃-True : List A → List (∃ (True ∘ P?))
     filter-∃-True = List.map (Σ.map₂ fromWitness) ∘ filter-∃
 
-    filter-∃-True-∈ : ∀ {a as} → a ∈ as → (pa : True (P? a)) → (a , pa) ∈ filter-∃-True as
+    filter-∃-True-∈ : a ∈ as → (pa : True (P? a)) → (a , pa) ∈ filter-∃-True as
     filter-∃-True-∈ {a} e pa =
       subst
         (λ pa′ → (a , pa′) ∈ _)
@@ -112,15 +118,15 @@ record IsFinite {ℓ₁} (A : Set ℓ₁) : Set ℓ₁ where
       ; membership = λ where (a , pa) → filter-∃-True-∈ (membership a) pa
       }
 
-  module Ordered {ℓ₂ ℓ₃} {_≈_ : A → A → Set ℓ₂} {_<_ : A → A → Set ℓ₃}
-    (<-po : IsDecStrictPartialOrder _≈_ _<_)
+  module Ordered {_≈_ : A → A → Set ℓ₁} {_<_ : A → A → Set ℓ₂}
+                 (<-po : IsDecStrictPartialOrder _≈_ _<_)
     where
     open IsDecStrictPartialOrder <-po
 
-    _≮_ : A → A → Set _
+    _≮_ : A → A → Set ℓ₂
     a ≮ b = ¬ (a < b)
 
-    maxOf : A → ∀ as → ∃ λ a → ∀ {x} → x ∈ as → a ≮ x
+    maxOf : A → (as : List A) → ∃ λ a → {x : A} → x ∈ as → a ≮ x
     maxOf p [] = p , λ ()
     maxOf p (a ∷ as) =
       let x , f = maxOf p as in
@@ -139,22 +145,19 @@ record IsFinite {ℓ₁} (A : Set ℓ₁) : Set ℓ₁ where
               (there y∈as) → f y∈as x<y
 
     max : (¬ A) ⊎ (∃ λ a → ∀ x → a ≮ x)
-    max =
-      case dec of λ where
-        (yes a) → let x , m = maxOf a elements in inj₂ (x , (m ∘ membership))
-        (no ¬a) → inj₁ ¬a
+    max with dec
+    ... | yes a = let x , m = maxOf a elements in inj₂ (x , (m ∘ membership))
+    ... | no ¬a = inj₁ ¬a
 
     pointedMax : A → ∃ λ a → ∀ x → a ≮ x
-    pointedMax x =
-      case max of λ where
-        (inj₁ ¬a) → contradiction x ¬a
-        (inj₂ a) → a
+    pointedMax x with max
+    ... | inj₁ ¬a = contradiction x ¬a
+    ... | inj₂ a  = a
 
 open IsFinite
 
-via-left-inverse : ∀ {ℓ₁ ℓ₂} {A : Set ℓ₁} {B : Set ℓ₂} → (A ↞ B) → IsFinite B → IsFinite A
+via-left-inverse : (A ↞ B) → IsFinite B → IsFinite A
 via-left-inverse f finB = record
   { elements = List.map (from ⟨$⟩_) (elements finB)
   ; membership = λ a → subst (_∈ _) (left-inverse-of a) (∈-map⁺ _ (membership finB (to ⟨$⟩ a)))
-  }
-  where open ↞.LeftInverse f
+  } where open LeftInverse f

@@ -1,18 +1,13 @@
-open import Finite
-
 module Data.Sum.Finite where
 
 open import Data.List as List
 open import Data.List.Relation.Unary.Any as Any
 open import Data.List.Membership.Propositional
 open import Data.List.Membership.Propositional.Properties
--- open import Data.Vec as Vec
--- open import Data.Vec.Membership.Propositional
--- open import Data.Vec.Membership.Propositional.Properties
--- open import Data.Vec.Properties
 open import Data.Sum
 open import Function
 
+open import Finite
 open IsFinite
 
 instance

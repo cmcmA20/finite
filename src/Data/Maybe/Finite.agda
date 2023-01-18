@@ -5,9 +5,10 @@ open import Data.List.Relation.Unary.Any
 open import Data.List.Membership.Propositional
 open import Data.List.Membership.Propositional.Properties
 open import Data.Maybe
-open import Finite
 open import Function
 open import Relation.Binary.PropositionalEquality
+
+open import Finite
 
 instance
   Maybe-IsFinite : ∀ {a} {A : Set a} → {af : IsFinite A} → IsFinite (Maybe A)
