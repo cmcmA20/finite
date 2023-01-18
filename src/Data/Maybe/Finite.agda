@@ -7,10 +7,11 @@ open import Data.List.Membership.Propositional.Properties
 open import Data.Maybe
 open import Function
 open import Relation.Binary.PropositionalEquality
+open import Level
 
 open import Finite
 
 instance
-  Maybe-IsFinite : ∀ {a} {A : Set a} → {af : IsFinite A} → IsFinite (Maybe A)
-  Maybe-IsFinite {af = finite es _∈es} =
+  Maybe-IsFinite : {ℓ : Level} {A : Set ℓ} ⦃ af : IsFinite A ⦄ → IsFinite (Maybe A)
+  Maybe-IsFinite ⦃ af = finite es _∈es ⦄ =
     record { membership = maybe (there ∘ ∈-map⁺ _ ∘ _∈es) (here refl) }

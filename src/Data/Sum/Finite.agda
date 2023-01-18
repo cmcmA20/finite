@@ -11,8 +11,8 @@ open import Finite
 open IsFinite
 
 instance
-  ⊎-IsFinite : ∀ {ℓ₁ ℓ₂} {A : Set ℓ₁} {B : Set ℓ₂} → {af : IsFinite A} → {bf : IsFinite B} → IsFinite (A ⊎ B)
-  ⊎-IsFinite {af = af} {bf = bf} = record
+  ⊎-IsFinite : ∀ {ℓ₁ ℓ₂} {A : Set ℓ₁} {B : Set ℓ₂} ⦃ af : IsFinite A ⦄ ⦃ bf : IsFinite B ⦄ → IsFinite (A ⊎ B)
+  ⊎-IsFinite ⦃ af ⦄ ⦃ bf ⦄ = record
     { elements = List.map inj₁ (elements af) List.++ List.map inj₂ (elements bf)
     ; membership =
         [ ∈-++⁺ˡ   ∘ ∈-map⁺ _ ∘ membership af

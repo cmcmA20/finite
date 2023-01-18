@@ -9,17 +9,18 @@ open import Data.Vec.Membership.Propositional
 open import Data.Vec.Membership.Propositional.Properties
 open import Data.Vec.Properties
 open import Relation.Binary.PropositionalEquality
+open import Level
 
 open import Finite
 open IsFinite
 
 instance
-  Vec-IsFinite : ∀ {ℓ} {A : Set ℓ} {n} → {af : IsFinite A} → IsFinite (Vec A n)
-  elements (Vec-IsFinite {n = zero}) = List.[ [] ]
-  elements (Vec-IsFinite {n = suc n} {af = af}) = toList (Vec.map (uncurry _∷_) (allPairs (elementsVec af) (elementsVec (Vec-IsFinite {af = af}))))
+  Vec-IsFinite : {ℓ : Level} {A : Set ℓ} {n : ℕ} ⦃ af : IsFinite A ⦄ → IsFinite (Vec A n)
+  elements (Vec-IsFinite {n = 0    }       ) = List.[ [] ]
+  elements (Vec-IsFinite {n = suc n} ⦃ af ⦄) = toList (Vec.map (uncurry _∷_) (allPairs (elementsVec af) (elementsVec (Vec-IsFinite))))
 
   membership Vec-IsFinite [] = here refl
-  membership (Vec-IsFinite {af = af}) (a ∷ as) =
+  membership (Vec-IsFinite ⦃ af ⦄) (a ∷ as) =
     ∈-toList⁺
       (∈-map⁺ _
         (∈-allPairs⁺

@@ -22,5 +22,5 @@ instance
           (∈-map⁺ _ (membership (bf a) b))
           (∈-map⁺ _ (membership af a))
 
-  ×-IsFinite : ∀ {ℓ₁ ℓ₂} {A : Set ℓ₁} {B : Set ℓ₂} → {af : IsFinite A} → {bf : IsFinite B} → IsFinite (A × B)
-  ×-IsFinite {af = af} {bf = bf} = Σ-IsFinite {af = af} {bf = const bf}
+  ×-IsFinite : ∀ {ℓ₁ ℓ₂} {A : Set ℓ₁} {B : Set ℓ₂} ⦃ af : IsFinite A ⦄ ⦃ bf : IsFinite B ⦄ → IsFinite (A × B)
+  ×-IsFinite ⦃ af ⦄ ⦃ bf ⦄ = Σ-IsFinite {af = af} {bf = const bf}

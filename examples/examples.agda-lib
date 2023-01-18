@@ -1,0 +1,8 @@
+name: finite-examples
+depend:
+  standard-library
+  finite
+include: .
+flags:
+  --safe
+  --without-K
