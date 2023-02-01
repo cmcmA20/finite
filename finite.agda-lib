@@ -1,6 +1,7 @@
 name: finite
 depend:
   standard-library
+  kl-prelude
 include:
   src
 flags:

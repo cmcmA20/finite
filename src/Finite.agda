@@ -5,36 +5,50 @@ open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Membership.Propositional.Properties using (∈-map⁺)
 open import Data.List.Relation.Binary.Subset.Propositional using (_⊆_)
 open import Data.List.Relation.Unary.Any using (here; there)
-open import Data.Product as Σ using (_×_; _,_; -,_; _,′_; ∃)
+open import Data.Product as Σ using (_×_; _,_; -,_; _,′_; ∃; proj₁)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Vec.Base using (Vec; []; _∷_; fromList)
 open import Function.Base using (_∘_; id; case_of_)
 open import Function.Equality using (_⟨$⟩_; cong)
-open import Function.LeftInverse using (LeftInverse; _↞_)
+open import Function.LeftInverse using (LeftInverse; _↞_; RightInverse)
 open import Level using (Level)
 open import Relation.Binary using (IsDecStrictPartialOrder)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≗_; refl; subst)
 open import Relation.Nullary.Decidable using (Dec; no; yes; fromWitness; toWitness; True)
 open import Relation.Nullary.Negation using (¬_; contradiction)
 
+open import KL.Prelude
+open Levels
+open import KL.DecEq
+open DecEq ⦃ ... ⦄
+open import KL.Propositional
+
 private
   variable
-    ℓ ℓ₁ ℓ₂ ℓ₃ : Level
-    A : Set ℓ₁
-    B : Set ℓ₂
+    A : Type ℓ₁
+    B : Type ℓ₂
+
+instance
+  ∃∈-dec : {xs : List A} → DecEq (∃ (_∈ xs))
+  (∃∈-dec DecEq.≟ (_ , here  refl)) (_ , here refl) = yes refl
+  (∃∈-dec DecEq.≟ (_ , here  _   )) (_ , there _  ) = no λ ()
+  (∃∈-dec DecEq.≟ (_ , there _   )) (_ , here  _  ) = no λ ()
+  (∃∈-dec DecEq.≟ (_ , there p   )) (_ , there q) with DecEq._≟_ ∃∈-dec (-, p) (-, q)
+  ... | yes refl = yes refl
+  ... | no ¬prf  = no λ { refl → ¬prf refl }
 
 fromWitness∘toWitness≗id : {A? : Dec A} → fromWitness {Q = A?} ∘ toWitness ≗ id
 fromWitness∘toWitness≗id {A? = A?} with A?
 … | yes _ = λ { tt → refl }
 … | no  _ = λ ()
 
-FiniteRec : (A → List A → Set ℓ₂) → Set ℓ₃ → Set _
+FiniteRec : (A → List A → Type ℓ₂) → Type ℓ₃ → Type _
 FiniteRec {A = A} P B = (xs ys : List A) → ((a : A) → (a ∈ xs × P a xs) ⊎ (a ∈ ys)) → B
 
-record IsFinite (A : Set ℓ) : Set ℓ where
+record IsFinite (A : Type ℓ) : Type ℓ where
   constructor finite
   field
-    elements : List A
+    elements   : List A
     membership : (a : A) → a ∈ elements
 
   size = length elements
@@ -48,7 +62,7 @@ record IsFinite (A : Set ℓ) : Set ℓ where
   finite-⊆ : xs ⊆ elements
   finite-⊆ {x = x} _ = membership x
 
-  finiteRec : {Q : A → List A → Set ℓ₁} → FiniteRec Q B → B
+  finiteRec : {Q : A → List A → Type ℓ₁} → FiniteRec Q B → B
   finiteRec rec = rec [] elements (inj₂ ∘ membership)
 
   dec : Dec A
@@ -56,7 +70,12 @@ record IsFinite (A : Set ℓ) : Set ℓ where
   ... | []    | _∈[] = no λ a → case a ∈[] of λ ()
   ... | a ∷ _ | _    = yes a
 
-  module _ {P : A → Set ℓ₁} (P? : (a : A) → Dec (P a)) where
+  finite-decEq : DecEq A
+  DecEq._≟_ finite-decEq a b with (-, membership a) ≟ (-, membership b)
+  ... | yes p = yes (Σ-elim-fst p)
+  ... | no ¬p = no λ { refl → ¬p refl }
+
+  module _ {P : A → Type ℓ₁} (P? : (a : A) → Dec (P a)) where
     ∃? : Dec (∃ P)
     ∃? = finiteRec go
       where
@@ -114,16 +133,19 @@ record IsFinite (A : Set ℓ) : Set ℓ where
 
     filter : IsFinite (∃ (True ∘ P?))
     filter = record
-      { elements = filter-∃-True elements
+      { elements   = filter-∃-True elements
       ; membership = λ where (a , pa) → filter-∃-True-∈ (membership a) pa
       }
 
-  module Ordered {_≈_ : A → A → Set ℓ₁} {_<_ : A → A → Set ℓ₂}
+    filterProp : ⦃ _ : ∀ {a} → IsProp (P a) ⦄ → IsFinite (∃ P)
+    filterProp = {!!}
+
+  module Ordered {_≈_ : A → A → Type ℓ₁} {_<_ : A → A → Type ℓ₂}
                  (<-po : IsDecStrictPartialOrder _≈_ _<_)
     where
     open IsDecStrictPartialOrder <-po
 
-    _≮_ : A → A → Set ℓ₂
+    _≮_ : A → A → Type ℓ₂
     a ≮ b = ¬ (a < b)
 
     maxOf : A → (as : List A) → ∃ λ a → {x : A} → x ∈ as → a ≮ x
@@ -157,7 +179,7 @@ record IsFinite (A : Set ℓ) : Set ℓ where
 open IsFinite
 
 via-left-inverse : (A ↞ B) → IsFinite B → IsFinite A
-via-left-inverse f finB = record
-  { elements = List.map (from ⟨$⟩_) (elements finB)
-  ; membership = λ a → subst (_∈ _) (left-inverse-of a) (∈-map⁺ _ (membership finB (to ⟨$⟩ a)))
+via-left-inverse f Bᶠ = record
+  { elements = List.map (from ⟨$⟩_) (elements Bᶠ)
+  ; membership = λ a → subst (_∈ _) (left-inverse-of a) (∈-map⁺ _ (membership Bᶠ (to ⟨$⟩ a)))
   } where open LeftInverse f
